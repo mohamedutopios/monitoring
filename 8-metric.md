@@ -1,159 +1,126 @@
-Parfait ! Tu veux activer **HTTPS** pour accéder à l’interface de Prometheus. C’est une **excellente pratique** pour sécuriser l’accès (chiffrement, protection contre l’interception, etc.).
+Voici une explication complète et claire des **métriques avec Prometheus**, incluant les **concepts**, **types de métriques**, et **exemples concrets** :
 
 ---
 
-# ✅ Objectif
+## 🧠 Concepts clés des métriques dans Prometheus
 
-* Accès à Prometheus via `https://IP_VM:443` (ou un domaine)
-* Utiliser **NGINX** comme **reverse proxy TLS** devant Prometheus
-* Avec **certificats SSL/TLS valides (Let’s Encrypt)** ou **auto-signés** selon les cas
+1. **Métrique**
 
----
+   * Une **valeur mesurable** à un instant donné, comme `CPU usage`, `nombre de requêtes`, `espace disque`, etc.
 
-## 📌 Deux solutions possibles :
+2. **Séries temporelle**
 
-### ✅ **Solution 1 : Avec Let’s Encrypt** (recommandé si tu as un domaine public)
+   * Chaque métrique est enregistrée **au fil du temps**, ce qui permet de faire des **graphes** et **des alertes**.
+   * Chaque série est identifiée par :
 
-* Gratuit, simple avec **Certbot**
-* Nécessite que la VM soit **accessible depuis Internet** (port 80 ouvert)
-* Résultat : certificat TLS signé par une autorité reconnue
+     * **Nom de la métrique**
+     * **Labels** (étiquettes) : pour ajouter des dimensions (`instance`, `job`, etc.)
 
-### ✅ **Solution 2 : Certificat auto-signé**
+3. **Scraping**
 
-* Rapide pour usage **interne**
-* Le navigateur affichera une alerte, mais le trafic est bien chiffré
+   * Prometheus **interroge régulièrement** ses cibles (exporters ou applications instrumentées) pour récupérer les valeurs.
 
----
+4. **Labels**
 
-# 🔧 Mise en place HTTPS avec NGINX
+   * Permettent de **différencier plusieurs instances** d'une même métrique.
+   * Exemple :
+     `http_requests_total{method="POST", status="500", instance="192.168.1.1:8080"}`
 
----
+5. **PromQL**
 
-## 🔁 PRÉREQUIS
-
-* Prometheus tourne sur `localhost:9090`
-* NGINX est installé (`sudo apt install nginx`)
-* Authentification basique en place (facultatif)
-* Prometheus n'est **accessible que via NGINX**
+   * Le langage de requêtage de Prometheus, pour interroger et manipuler les métriques.
 
 ---
 
-## 🛠️ ÉTAPES POUR HTTPS (avec certificat auto-signé)
+## 📊 Types de métriques (selon Prometheus)
+
+| Type          | Description                                                           | Exemple                                  |
+| ------------- | --------------------------------------------------------------------- | ---------------------------------------- |
+| **Counter**   | Compte qui **n’augmente que** (jamais ne diminue).                    | `http_requests_total`                    |
+| **Gauge**     | Valeur pouvant **monter ou descendre**.                               | `memory_usage_bytes`, `cpu_temp_celsius` |
+| **Histogram** | Comptabilise les **valeurs dans des intervalles (buckets)**.          | `http_request_duration_seconds_bucket`   |
+| **Summary**   | Fournit des **quantiles** (moyenne, 95e percentile) + total et count. | `rpc_duration_seconds`                   |
 
 ---
 
-### ✅ 1. Générer un certificat auto-signé
+## 🛠 Exemples concrets
 
-```bash
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
- -keyout /etc/ssl/private/prometheus.key \
- -out /etc/ssl/certs/prometheus.crt \
- -subj "/C=FR/ST=Ile-de-France/L=Paris/O=Monitoring/OU=IT/CN=prometheus.local"
+### ✅ 1. Counter
+
+```prometheus
+http_requests_total{method="GET", status="200"}  15423
+```
+
+> 🔹 Utilisé pour compter les requêtes HTTP traitées.
+
+---
+
+### ✅ 2. Gauge
+
+```prometheus
+node_memory_Active_bytes{instance="server1:9100"}  2048000000
+```
+
+> 🔹 Utilisé pour afficher la mémoire utilisée actuellement.
+
+---
+
+### ✅ 3. Histogram
+
+```prometheus
+http_request_duration_seconds_bucket{le="0.5"}  1123
+http_request_duration_seconds_bucket{le="1.0"}  1534
+http_request_duration_seconds_sum  345.98
+http_request_duration_seconds_count  2345
+```
+
+> 🔹 Montre combien de requêtes ont duré moins de 0.5s, 1s, etc.
+
+---
+
+### ✅ 4. Summary
+
+```prometheus
+rpc_duration_seconds{quantile="0.5"} 0.05
+rpc_duration_seconds{quantile="0.9"} 0.1
+rpc_duration_seconds{quantile="0.99"} 0.15
+rpc_duration_seconds_sum  15.2
+rpc_duration_seconds_count  310
+```
+
+> 🔹 Mesure les durées et donne des quantiles pour les temps de réponse.
+
+---
+
+## 🔎 Exemple PromQL
+
+1. **Nombre de requêtes HTTP en 5 minutes :**
+
+```promql
+sum(rate(http_requests_total[5m]))
+```
+
+2. **Utilisation mémoire :**
+
+```promql
+node_memory_Active_bytes / node_memory_MemTotal_bytes
+```
+
+3. **CPU par core :**
+
+```promql
+rate(node_cpu_seconds_total{mode="user"}[1m])
 ```
 
 ---
 
-### ✅ 2. Configurer NGINX avec SSL
+## 🧪 Sources de métriques (exporters)
 
-Édite ou crée le fichier NGINX pour Prometheus :
-
-```bash
-sudo nano /etc/nginx/sites-available/prometheus
-```
-
-Contenu :
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name _;
-
-    ssl_certificate     /etc/ssl/certs/prometheus.crt;
-    ssl_certificate_key /etc/ssl/private/prometheus.key;
-
-    location / {
-        proxy_pass http://localhost:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-
-        auth_basic "Protected Prometheus";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-    }
-}
-
-# Optionnel : rediriger HTTP vers HTTPS
-server {
-    listen 80;
-    return 301 https://$host$request_uri;
-}
-```
+* `node_exporter` → pour Linux (CPU, mémoire, disques…)
+* `blackbox_exporter` → pour faire du ping/HTTP/tcp.
+* `vmware_exporter`, `mysqld_exporter`, `nginx_exporter`, etc.
+* Ou directement depuis votre **application instrumentée** avec des bibliothèques Prometheus (Go, Java, Python…).
 
 ---
 
-### ✅ 3. Activer le site et recharger NGINX
-
-```bash
-sudo ln -s /etc/nginx/sites-available/prometheus /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### Parefeu : 
-
-- sudo ufw status
-- sudo ufw allow 80/tcp
-- sudo ufw allow 443/tcp
-- sudo ufw reload
-
----
-
-### ✅ 4. Tester
-
-Ouvre dans ton navigateur :
-
-```
-https://[IP_VM]/
-```
-
-* Le navigateur affichera une **alerte de certificat non valide** (car auto-signé)
-* Tu peux l’accepter pour continuer
-* 🔐 Le trafic est maintenant **chiffré en HTTPS**
-
----
-
-## ✅ Variante : utiliser **Let’s Encrypt (Certbot)** avec un domaine
-
-> Si tu as un domaine pointant vers ta VM (ex : `prometheus.mondomaine.com`)
-
-### 1. Installe certbot
-
-```bash
-sudo apt install certbot python3-certbot-nginx -y
-```
-
-### 2. Obtiens un certificat
-
-```bash
-sudo certbot --nginx -d prometheus.mondomaine.com
-```
-
-→ NGINX sera automatiquement reconfiguré avec HTTPS + renouvellement auto
-
----
-
-## 🔐 Bonus : durcir la config TLS (optionnel)
-
-Ajoute dans ton bloc `server` :
-
-```nginx
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ciphers HIGH:!aNULL:!MD5;
-ssl_prefer_server_ciphers on;
-```
-
----
-
-Souhaites-tu que je t’envoie :
-
-* Un script Bash automatique pour faire tout ça ?
-* Ou la même chose pour Grafana en HTTPS ?
+Souhaitez-vous un exemple **complet de métrique personnalisée** dans une application (ex: en Python ou Java) ? Ou une démonstration de dashboard Grafana lié à ces métriques ?

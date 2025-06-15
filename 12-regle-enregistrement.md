@@ -1,159 +1,81 @@
-Parfait ! Tu veux activer **HTTPS** pour accéder à l’interface de Prometheus. C’est une **excellente pratique** pour sécuriser l’accès (chiffrement, protection contre l’interception, etc.).
+### 🎯 Qu’est-ce qu’une **recording rule** dans Prometheus ?
 
 ---
 
-# ✅ Objectif
+## 🧠 Définition
 
-* Accès à Prometheus via `https://IP_VM:443` (ou un domaine)
-* Utiliser **NGINX** comme **reverse proxy TLS** devant Prometheus
-* Avec **certificats SSL/TLS valides (Let’s Encrypt)** ou **auto-signés** selon les cas
+Une **recording rule** est une règle dans Prometheus qui permet de **pré-calculer** une requête PromQL et d’enregistrer son résultat **sous une nouvelle métrique**.
 
----
-
-## 📌 Deux solutions possibles :
-
-### ✅ **Solution 1 : Avec Let’s Encrypt** (recommandé si tu as un domaine public)
-
-* Gratuit, simple avec **Certbot**
-* Nécessite que la VM soit **accessible depuis Internet** (port 80 ouvert)
-* Résultat : certificat TLS signé par une autorité reconnue
-
-### ✅ **Solution 2 : Certificat auto-signé**
-
-* Rapide pour usage **interne**
-* Le navigateur affichera une alerte, mais le trafic est bien chiffré
+> Cela évite de recalculer des requêtes complexes à chaque fois, ce qui **améliore les performances**.
 
 ---
 
-# 🔧 Mise en place HTTPS avec NGINX
+## 📦 À quoi ça sert concrètement ?
+
+✅ **Optimiser les performances** :
+Les requêtes complexes (avec `rate()`, `sum()`, `avg()`, etc.) sont calculées à l’avance.
+
+✅ **Simplifier l’écriture** :
+Tu peux utiliser une **métrique lisible** au lieu d’une requête longue dans Grafana ou les alertes.
+
+✅ **Préparer des métriques sur mesure** :
+Créer des métriques plus proches du métier (ex : `cpu_utilisation_pct`, `web_errors_rate`).
 
 ---
 
-## 🔁 PRÉREQUIS
+## 🧾 Exemple concret
 
-* Prometheus tourne sur `localhost:9090`
-* NGINX est installé (`sudo apt install nginx`)
-* Authentification basique en place (facultatif)
-* Prometheus n'est **accessible que via NGINX**
+### Requête complexe :
 
----
+```promql
+sum(rate(http_requests_total[5m])) by (job)
+```
 
-## 🛠️ ÉTAPES POUR HTTPS (avec certificat auto-signé)
+### En recording rule :
 
----
+```yaml
+groups:
+  - name: recording-rules
+    rules:
+      - record: job:http_requests_rate_5m
+        expr: sum(rate(http_requests_total[5m])) by (job)
+```
 
-### ✅ 1. Générer un certificat auto-signé
+> Résultat : Prometheus stocke le résultat sous une **nouvelle métrique** appelée `job:http_requests_rate_5m`.
 
-```bash
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
- -keyout /etc/ssl/private/prometheus.key \
- -out /etc/ssl/certs/prometheus.crt \
- -subj "/C=FR/ST=Ile-de-France/L=Paris/O=Monitoring/OU=IT/CN=prometheus.local"
+Tu peux ensuite l’utiliser comme une métrique native :
+
+```promql
+job:http_requests_rate_5m{job="web"}
 ```
 
 ---
 
-### ✅ 2. Configurer NGINX avec SSL
+## ⚙️ Où l’écrire ?
 
-Édite ou crée le fichier NGINX pour Prometheus :
+Dans un fichier `rules.yml` (ou autre nom), que tu ajoutes dans `prometheus.yml` :
 
-```bash
-sudo nano /etc/nginx/sites-available/prometheus
-```
-
-Contenu :
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name _;
-
-    ssl_certificate     /etc/ssl/certs/prometheus.crt;
-    ssl_certificate_key /etc/ssl/private/prometheus.key;
-
-    location / {
-        proxy_pass http://localhost:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-
-        auth_basic "Protected Prometheus";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-    }
-}
-
-# Optionnel : rediriger HTTP vers HTTPS
-server {
-    listen 80;
-    return 301 https://$host$request_uri;
-}
+```yaml
+rule_files:
+  - "rules/recording_rules.yml"
 ```
 
 ---
 
-### ✅ 3. Activer le site et recharger NGINX
+## 🔁 Quand est-elle évaluée ?
 
-```bash
-sudo ln -s /etc/nginx/sites-available/prometheus /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### Parefeu : 
-
-- sudo ufw status
-- sudo ufw allow 80/tcp
-- sudo ufw allow 443/tcp
-- sudo ufw reload
+Les recording rules sont **réévaluées automatiquement à chaque intervalle** d’évaluation (souvent 15s ou 30s selon la config de Prometheus).
 
 ---
 
-### ✅ 4. Tester
+## 🆚 Différence avec une alerting rule ?
 
-Ouvre dans ton navigateur :
-
-```
-https://[IP_VM]/
-```
-
-* Le navigateur affichera une **alerte de certificat non valide** (car auto-signé)
-* Tu peux l’accepter pour continuer
-* 🔐 Le trafic est maintenant **chiffré en HTTPS**
+| Recording Rule                         | Alerting Rule                                   |
+| -------------------------------------- | ----------------------------------------------- |
+| Pré-calcule une requête PromQL         | Déclenche une alerte si une condition est vraie |
+| Stocke le résultat comme une métrique  | Envoie une notification (via Alertmanager)      |
+| Optimise les dashboards et les alertes | Sert à la supervision directe                   |
 
 ---
 
-## ✅ Variante : utiliser **Let’s Encrypt (Certbot)** avec un domaine
-
-> Si tu as un domaine pointant vers ta VM (ex : `prometheus.mondomaine.com`)
-
-### 1. Installe certbot
-
-```bash
-sudo apt install certbot python3-certbot-nginx -y
-```
-
-### 2. Obtiens un certificat
-
-```bash
-sudo certbot --nginx -d prometheus.mondomaine.com
-```
-
-→ NGINX sera automatiquement reconfiguré avec HTTPS + renouvellement auto
-
----
-
-## 🔐 Bonus : durcir la config TLS (optionnel)
-
-Ajoute dans ton bloc `server` :
-
-```nginx
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ciphers HIGH:!aNULL:!MD5;
-ssl_prefer_server_ciphers on;
-```
-
----
-
-Souhaites-tu que je t’envoie :
-
-* Un script Bash automatique pour faire tout ça ?
-* Ou la même chose pour Grafana en HTTPS ?
+Souhaites-tu un exemple pratique de **recording rule avec le CPU**, ou un exemple de projet complet avec dashboards et alertes ?

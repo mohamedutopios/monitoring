@@ -1,159 +1,207 @@
-Parfait ! Tu veux activer **HTTPS** pour accéder à l’interface de Prometheus. C’est une **excellente pratique** pour sécuriser l’accès (chiffrement, protection contre l’interception, etc.).
+Très bien ! Voici une **présentation complète de PromQL** (Prometheus Query Language), avec la **théorie**, la **syntaxe**, et des **exemples pratiques**.
 
 ---
 
-# ✅ Objectif
+# 🧠 Introduction à PromQL
 
-* Accès à Prometheus via `https://IP_VM:443` (ou un domaine)
-* Utiliser **NGINX** comme **reverse proxy TLS** devant Prometheus
-* Avec **certificats SSL/TLS valides (Let’s Encrypt)** ou **auto-signés** selon les cas
+**PromQL** est le langage utilisé par Prometheus pour **interroger, filtrer, agréger et transformer** les séries temporelles de métriques.
 
----
+Il permet :
 
-## 📌 Deux solutions possibles :
-
-### ✅ **Solution 1 : Avec Let’s Encrypt** (recommandé si tu as un domaine public)
-
-* Gratuit, simple avec **Certbot**
-* Nécessite que la VM soit **accessible depuis Internet** (port 80 ouvert)
-* Résultat : certificat TLS signé par une autorité reconnue
-
-### ✅ **Solution 2 : Certificat auto-signé**
-
-* Rapide pour usage **interne**
-* Le navigateur affichera une alerte, mais le trafic est bien chiffré
+* d'afficher les valeurs actuelles,
+* de calculer des taux, des moyennes, des percentiles,
+* de grouper les métriques par labels,
+* de déclencher des alertes (avec Alertmanager),
+* d'afficher des graphiques dans Grafana.
 
 ---
 
-# 🔧 Mise en place HTTPS avec NGINX
+# 🧱 1. 🧠 Structure de base
 
----
+```promql
+<metric_name>{<label_filters>} <operator> <expression>
+```
 
-## 🔁 PRÉREQUIS
+Exemples :
 
-* Prometheus tourne sur `localhost:9090`
-* NGINX est installé (`sudo apt install nginx`)
-* Authentification basique en place (facultatif)
-* Prometheus n'est **accessible que via NGINX**
-
----
-
-## 🛠️ ÉTAPES POUR HTTPS (avec certificat auto-signé)
-
----
-
-### ✅ 1. Générer un certificat auto-signé
-
-```bash
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
- -keyout /etc/ssl/private/prometheus.key \
- -out /etc/ssl/certs/prometheus.crt \
- -subj "/C=FR/ST=Ile-de-France/L=Paris/O=Monitoring/OU=IT/CN=prometheus.local"
+```promql
+http_requests_total
+http_requests_total{method="GET", status="200"}
 ```
 
 ---
 
-### ✅ 2. Configurer NGINX avec SSL
+# 📂 2. 🧾 Types de données
 
-Édite ou crée le fichier NGINX pour Prometheus :
+| Type           | Exemple                   | Description                        |
+| -------------- | ------------------------- | ---------------------------------- |
+| Instant vector | `http_requests_total`     | Valeur actuelle d’une métrique     |
+| Range vector   | `http_requests_total[5m]` | Valeurs sur une **plage de temps** |
+| Scalar         | `5`, `1.0`                | Un simple nombre                   |
+| String         | Rarement utilisé          | Chaîne de texte                    |
 
-```bash
-sudo nano /etc/nginx/sites-available/prometheus
+---
+
+# 🔧 3. 🔎 Fonctions de base
+
+## 📈 3.1 — `rate()` : taux d’évolution (par seconde)
+
+```promql
+rate(http_requests_total[1m])
 ```
 
-Contenu :
+> Nombre moyen de requêtes HTTP par seconde sur les 1 dernières minutes.
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name _;
+---
 
-    ssl_certificate     /etc/ssl/certs/prometheus.crt;
-    ssl_certificate_key /etc/ssl/private/prometheus.key;
+## 🧮 3.2 — `sum()` : somme
 
-    location / {
-        proxy_pass http://localhost:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+```promql
+sum(rate(http_requests_total[5m]))
+```
 
-        auth_basic "Protected Prometheus";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-    }
-}
+> Total des requêtes HTTP par seconde sur toutes les instances.
 
-# Optionnel : rediriger HTTP vers HTTPS
-server {
-    listen 80;
-    return 301 https://$host$request_uri;
-}
+---
+
+## 🧾 3.3 — `avg()`, `min()`, `max()`, `count()`
+
+```promql
+avg(node_memory_Active_bytes)
+```
+
+> Moyenne de la mémoire utilisée sur toutes les machines.
+
+---
+
+## 📊 3.4 — `irate()` : taux instantané
+
+```promql
+irate(node_network_receive_bytes_total[1m])
+```
+
+> Taux immédiat (plus sensible aux pics que `rate()`).
+
+---
+
+## 🧪 3.5 — `increase()` : variation sur une période
+
+```promql
+increase(http_requests_total[1h])
+```
+
+> Nombre de requêtes HTTP supplémentaires sur la dernière heure.
+
+---
+
+## 📐 3.6 — `histogram_quantile()`
+
+```promql
+histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
+```
+
+> Donne le **95e percentile** du temps de réponse HTTP.
+
+---
+
+# 🎯 4. 🎚 Opérateurs PromQL
+
+## 📊 Opérateurs arithmétiques
+
+```promql
+node_memory_MemFree_bytes / node_memory_MemTotal_bytes
+```
+
+> Pourcentage de mémoire libre.
+
+## 🧱 Opérateurs logiques
+
+```promql
+up == 0
+```
+
+> Filtre les services "down".
+
+## 🔀 Opérateurs de jointure `on()` et `ignoring()`
+
+```promql
+rate(http_requests_total[1m]) / on(instance) rate(http_errors_total[1m])
+```
+
+> Taux d’erreur par instance.
+
+---
+
+# 🧩 5. 🔁 Agrégations avec `by()` ou `without()`
+
+## Exemple :
+
+```promql
+sum(rate(http_requests_total[5m])) by (job)
+```
+
+> Somme du taux de requêtes HTTP groupée **par job**.
+
+---
+
+# 💡 6. ⚠️ Exemples utiles
+
+### 🔹 Services qui ne répondent plus :
+
+```promql
+up == 0
 ```
 
 ---
 
-### ✅ 3. Activer le site et recharger NGINX
+### 🔹 CPU utilisé par core :
 
-```bash
-sudo ln -s /etc/nginx/sites-available/prometheus /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### Parefeu : 
-
-- sudo ufw status
-- sudo ufw allow 80/tcp
-- sudo ufw allow 443/tcp
-- sudo ufw reload
-
----
-
-### ✅ 4. Tester
-
-Ouvre dans ton navigateur :
-
-```
-https://[IP_VM]/
-```
-
-* Le navigateur affichera une **alerte de certificat non valide** (car auto-signé)
-* Tu peux l’accepter pour continuer
-* 🔐 Le trafic est maintenant **chiffré en HTTPS**
-
----
-
-## ✅ Variante : utiliser **Let’s Encrypt (Certbot)** avec un domaine
-
-> Si tu as un domaine pointant vers ta VM (ex : `prometheus.mondomaine.com`)
-
-### 1. Installe certbot
-
-```bash
-sudo apt install certbot python3-certbot-nginx -y
-```
-
-### 2. Obtiens un certificat
-
-```bash
-sudo certbot --nginx -d prometheus.mondomaine.com
-```
-
-→ NGINX sera automatiquement reconfiguré avec HTTPS + renouvellement auto
-
----
-
-## 🔐 Bonus : durcir la config TLS (optionnel)
-
-Ajoute dans ton bloc `server` :
-
-```nginx
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ciphers HIGH:!aNULL:!MD5;
-ssl_prefer_server_ciphers on;
+```promql
+rate(node_cpu_seconds_total{mode="user"}[5m])
 ```
 
 ---
 
-Souhaites-tu que je t’envoie :
+### 🔹 RAM utilisée en pourcentage :
 
-* Un script Bash automatique pour faire tout ça ?
-* Ou la même chose pour Grafana en HTTPS ?
+```promql
+100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+```
+
+---
+
+### 🔹 Répartition des requêtes par statut HTTP :
+
+```promql
+sum(rate(http_requests_total[5m])) by (status)
+```
+
+---
+
+### 🔹 Mémoire utilisée par instance :
+
+```promql
+node_memory_Active_bytes{job="node_exporter"}
+```
+
+---
+
+### 🔹 Nombre de requêtes dans le dernier quart d’heure :
+
+```promql
+increase(http_requests_total[15m])
+```
+
+---
+
+# 🧪 Bonus : Tester dans Prometheus
+
+👉 Tu peux tester tes requêtes ici :
+
+* **Interface Web de Prometheus** : `http://<ip_prometheus>:9090`
+* Onglet **Graph** ou **Console**
+* Également dans **Grafana**, dans les panels de type "Time series"
+
+---
+
+Souhaites-tu maintenant une **fiche d'exercices avec corrigé** sur PromQL ? Ou un TP de supervision réel avec ces requêtes dans Grafana ?

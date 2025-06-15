@@ -938,6 +938,440 @@ sudo systemctl restart prometheus
 
 ---
 
+### Node Exporter
+
+#### Qu'est ce que les metrics
+
+<div style="font-size:25px">
+
+## 🧠 Définition
+
+> Une **métrique** dans Prometheus est une **valeur numérique collectée à un instant donné**, associée à un **nom** et à des **étiquettes (labels)**. Elle représente un **comportement observable du système**, par exemple :
+
+* le nombre de requêtes HTTP,
+* l’usage du CPU,
+* l’espace disque utilisé,
+* le nombre de connexions réseau.
+
+Chaque métrique est une **série temporelle**, c’est-à-dire une suite de valeurs associées à des instants précis.
+
+</div>
+
+---
+
+### Node Exporter
+
+#### Qu'est ce que les metrics
+
+<div style="font-size:25px">
+
+####  Structure d’une métrique
+
+Une métrique Prometheus a cette forme :
+
+```text
+<nom_de_la_métrique>{label1="valeur1", label2="valeur2"} valeur @timestamp
+```
+
+🔍 Exemple :
+
+```text
+http_requests_total{method="GET", status="200", instance="192.168.1.10:8080"} 12345  @1686723600
+```
+
+* `http_requests_total` : nom de la métrique
+* `{...}` : labels qui ajoutent du contexte
+* `12345` : valeur observée
+* `@1686723600` : horodatage (timestamp)
+
+</div>
+
+---
+
+### Node Exporter
+
+#### Qu'est ce que les metrics
+
+<div style="font-size:35px">
+
+#### 🎯 À quoi servent les métriques ?
+
+*  Créer des **graphes** dans Grafana
+*  Déclencher des **alertes** (via Alertmanager)
+*  Faire de l’analyse de performance
+*  Observer le comportement d’un service dans le temps
+
+</div>
+
+---
+
+## Node Exporter
+
+### Qu'est ce que les metrics
+
+<div style="font-size:35px">
+
+#### Types de métriques
+
+| Type        | Description                               | Exemple typique                        |
+| ----------- | ----------------------------------------- | -------------------------------------- |
+| `Counter`   | Cumul qui **augmente seulement**          | `http_requests_total`                  |
+| `Gauge`     | Valeur qui peut **monter et descendre**   | `memory_usage_bytes`, `cpu_temp`       |
+| `Histogram` | Découpe des valeurs en **intervalles**    | `http_request_duration_seconds_bucket` |
+| `Summary`   | Calcule des **quantiles** + count + somme | `rpc_duration_seconds`                 |
+</div>
+
+---
+
+## Node Exporter
+
+### Qu'est ce que les metrics
+
+<div style="font-size:35px">
+
+#### Types de métriques
+
+| Type        | Description                               | Exemple typique                        |
+| ----------- | ----------------------------------------- | -------------------------------------- |
+| `Counter`   | Cumul qui **augmente seulement**          | `http_requests_total`                  |
+| `Gauge`     | Valeur qui peut **monter et descendre**   | `memory_usage_bytes`, `cpu_temp`       |
+| `Histogram` | Découpe des valeurs en **intervalles**    | `http_request_duration_seconds_bucket` |
+| `Summary`   | Calcule des **quantiles** + count + somme | `rpc_duration_seconds`                 |
+</div>
+
+---
+
+## Node Exporter
+
+### Qu'est ce que les metrics
+
+<div style="font-size:30px">
+
+#### Comment sont collectées les métriques ?
+
+1. Prometheus **scrape** (interroge) ses cibles à intervalles réguliers (ex : toutes les 15s).
+2. Chaque cible (exporter ou app instrumentée) expose des métriques sur un endpoint `/metrics`.
+3. Prometheus stocke les valeurs et les étiquettes dans sa base de données en séries temporelles.
+
+</div>
+
+---
+
+## Node Exporter
+
+### PromQl
+
+<div style="font-size:28px">
+
+#### Introduction à PromQL
+
+**PromQL** est le langage utilisé par Prometheus pour **interroger, filtrer, agréger et transformer** les séries temporelles de métriques.
+
+Il permet :
+
+* d'afficher les valeurs actuelles,
+* de calculer des taux, des moyennes, des percentiles,
+* de grouper les métriques par labels,
+* de déclencher des alertes (avec Alertmanager),
+* d'afficher des graphiques dans Grafana.
+</div>
+
+---
+
+## Node Exporter
+
+### PromQl
+
+<div style="font-size:30px">
+
+### 1.  Structure de base
+
+```promql
+<metric_name>{<label_filters>} <operator> <expression>
+```
+
+Exemples :
+
+```promql
+http_requests_total
+http_requests_total{method="GET", status="200"}
+```
+
+</div>
+
+---
+
+## Node Exporter
+
+### PromQl
+
+<div style="font-size:25px">
+
+###  3.  Fonctions de base
+
+####  3.1 — `rate()` : taux d’évolution (par seconde)
+
+```promql
+rate(http_requests_total[1m])
+```
+
+> Nombre moyen de requêtes HTTP par seconde sur les 1 dernières minutes.
+
+### 3.2 — `sum()` : somme
+
+```promql
+sum(rate(http_requests_total[5m]))
+```
+
+> Total des requêtes HTTP par seconde sur toutes les instances.
+
+
+</div>
+
+---
+
+### Node Exporter
+
+#### PromQl
+
+<div style="font-size:20px">
+
+###  3.  Fonctions de base
+
+#### 3.3 — `avg()`, `min()`, `max()`, `count()`
+
+```promql
+avg(node_memory_Active_bytes)
+```
+
+> Moyenne de la mémoire utilisée sur toutes les machines.
+
+
+#### 3.4 — `irate()` : taux instantané
+
+```promql
+irate(node_network_receive_bytes_total[1m])
+```
+
+> Taux immédiat (plus sensible aux pics que `rate()`).
+
+####  3.5 — `increase()` : variation sur une période
+
+```promql
+increase(http_requests_total[1h])
+```
+
+> Nombre de requêtes HTTP supplémentaires sur la dernière heure.
+
+</div>
+
+---
+
+### Node Exporter
+
+#### PromQl
+
+<div style="font-size:20px">
+
+###  3.  Fonctions de base
+
+#### 3.3 — `avg()`, `min()`, `max()`, `count()`
+
+```promql
+avg(node_memory_Active_bytes)
+```
+
+> Moyenne de la mémoire utilisée sur toutes les machines.
+
+
+#### 3.4 — `irate()` : taux instantané
+
+```promql
+irate(node_network_receive_bytes_total[1m])
+```
+
+> Taux immédiat (plus sensible aux pics que `rate()`).
+
+####  3.5 — `increase()` : variation sur une période
+
+```promql
+increase(http_requests_total[1h])
+```
+
+> Nombre de requêtes HTTP supplémentaires sur la dernière heure.
+
+</div>
+
+---
+
+## Node Exporter
+
+### PromQl
+
+<div style="font-size:26px">
+
+##  3.  Fonctions de base
+
+### 3.6 — `histogram_quantile()`
+
+```promql
+histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
+```
+
+> Donne le **95e percentile** du temps de réponse HTTP.
+
+</div>
+
+---
+
+### Node Exporter
+
+#### PromQl
+
+<div style="font-size:20px">
+
+###  4. Opérateurs PromQL
+
+####  Opérateurs arithmétiques
+
+```promql
+node_memory_MemFree_bytes / node_memory_MemTotal_bytes
+```
+
+> Pourcentage de mémoire libre.
+
+#### Opérateurs logiques
+
+```promql
+up == 0
+```
+
+> Filtre les services "down".
+
+####  Opérateurs de jointure `on()` et `ignoring()`
+
+```promql
+rate(http_requests_total[1m]) / on(instance) rate(http_errors_total[1m])
+```
+
+> Taux d’erreur par instance.
+
+</div>
+
+---
+
+## Node Exporter
+
+### PromQl
+
+<div style="font-size:30px">
+
+### 5. Agrégations avec `by()` ou `without()`
+
+## Exemple :
+
+```promql
+sum(rate(http_requests_total[5m])) by (job)
+```
+
+> Somme du taux de requêtes HTTP groupée **par job**.
+
+</div>
+
+---
+
+#### Node Exporter
+
+##### PromQl
+
+<div style="font-size:17px">
+
+
+### 6. ⚠️ Exemples utiles
+
+#### Services qui ne répondent plus :
+
+```promql
+up == 0
+```
+
+#### CPU utilisé par core :
+
+```promql
+rate(node_cpu_seconds_total{mode="user"}[5m])
+```
+
+#### RAM utilisée en pourcentage :
+
+```promql
+100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+```
+
+#### Répartition des requêtes par statut HTTP :
+
+```promql
+sum(rate(http_requests_total[5m])) by (status)
+```
+
+#### Mémoire utilisée par instance :
+
+```promql
+node_memory_Active_bytes{job="node_exporter"}
+```
+
+#### Nombre de requêtes dans le dernier quart d’heure :
+
+```promql
+increase(http_requests_total[15m])
+```
+
+
+</div>
+
+---
+
+### Node Exporter
+
+#### PromQl
+
+<div style="font-size:19px">
+
+
+### 6. ⚠️ Exemples utiles
+
+#### Services qui ne répondent plus :
+
+```promql
+up == 0
+```
+
+#### CPU utilisé par core :
+
+```promql
+rate(node_cpu_seconds_total{mode="user"}[5m])
+```
+
+#### RAM utilisée en pourcentage :
+
+```promql
+100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+```
+
+#### Répartition des requêtes par statut HTTP :
+
+```promql
+sum(rate(http_requests_total[5m])) by (status)
+```
+
+#### Mémoire utilisée par instance :
+
+```promql
+node_memory_Active_bytes{job="node_exporter"}
+```
+
+</div>
+
+---
 
 #### Node Exporter
 
@@ -979,7 +1413,7 @@ sudo systemctl restart prometheus
 
 #### Visualisation des métriques système (CPU, RAM, disque)
 
-<div style="font-size:24px">
+<div style="font-size:25px">
 
 ###  2. Visualisation dans **Prometheus UI** (temporaire)
 
