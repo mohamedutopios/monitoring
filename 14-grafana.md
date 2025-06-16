@@ -1,159 +1,108 @@
-Parfait ! Tu veux activer **HTTPS** pour accéder à l’interface de Prometheus. C’est une **excellente pratique** pour sécuriser l’accès (chiffrement, protection contre l’interception, etc.).
+Voici un **guide complet et à jour pour installer Grafana** sur une machine **Ubuntu** (fonctionne aussi sur Debian). On part d’une machine fraîche.
 
 ---
 
-# ✅ Objectif
-
-* Accès à Prometheus via `https://IP_VM:443` (ou un domaine)
-* Utiliser **NGINX** comme **reverse proxy TLS** devant Prometheus
-* Avec **certificats SSL/TLS valides (Let’s Encrypt)** ou **auto-signés** selon les cas
-
----
-
-## 📌 Deux solutions possibles :
-
-### ✅ **Solution 1 : Avec Let’s Encrypt** (recommandé si tu as un domaine public)
-
-* Gratuit, simple avec **Certbot**
-* Nécessite que la VM soit **accessible depuis Internet** (port 80 ouvert)
-* Résultat : certificat TLS signé par une autorité reconnue
-
-### ✅ **Solution 2 : Certificat auto-signé**
-
-* Rapide pour usage **interne**
-* Le navigateur affichera une alerte, mais le trafic est bien chiffré
-
----
-
-# 🔧 Mise en place HTTPS avec NGINX
-
----
-
-## 🔁 PRÉREQUIS
-
-* Prometheus tourne sur `localhost:9090`
-* NGINX est installé (`sudo apt install nginx`)
-* Authentification basique en place (facultatif)
-* Prometheus n'est **accessible que via NGINX**
-
----
-
-## 🛠️ ÉTAPES POUR HTTPS (avec certificat auto-signé)
-
----
-
-### ✅ 1. Générer un certificat auto-signé
+## ✅ 1. Mise à jour de la machine
 
 ```bash
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
- -keyout /etc/ssl/private/prometheus.key \
- -out /etc/ssl/certs/prometheus.crt \
- -subj "/C=FR/ST=Ile-de-France/L=Paris/O=Monitoring/OU=IT/CN=prometheus.local"
+sudo apt update && sudo apt upgrade -y
 ```
 
 ---
 
-### ✅ 2. Configurer NGINX avec SSL
-
-Édite ou crée le fichier NGINX pour Prometheus :
+## ✅ 2. Installer les dépendances (si curl ou gnupg ne sont pas installés)
 
 ```bash
-sudo nano /etc/nginx/sites-available/prometheus
-```
-
-Contenu :
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name _;
-
-    ssl_certificate     /etc/ssl/certs/prometheus.crt;
-    ssl_certificate_key /etc/ssl/private/prometheus.key;
-
-    location / {
-        proxy_pass http://localhost:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-
-        auth_basic "Protected Prometheus";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-    }
-}
-
-# Optionnel : rediriger HTTP vers HTTPS
-server {
-    listen 80;
-    return 301 https://$host$request_uri;
-}
+sudo apt install -y apt-transport-https software-properties-common curl gnupg2
 ```
 
 ---
 
-### ✅ 3. Activer le site et recharger NGINX
+## ✅ 3. Ajouter le dépôt officiel Grafana
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/prometheus /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://apt.grafana.com/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
 ```
 
-### Parefeu : 
-
-- sudo ufw status
-- sudo ufw allow 80/tcp
-- sudo ufw allow 443/tcp
-- sudo ufw reload
-
----
-
-### ✅ 4. Tester
-
-Ouvre dans ton navigateur :
-
-```
-https://[IP_VM]/
-```
-
-* Le navigateur affichera une **alerte de certificat non valide** (car auto-signé)
-* Tu peux l’accepter pour continuer
-* 🔐 Le trafic est maintenant **chiffré en HTTPS**
-
----
-
-## ✅ Variante : utiliser **Let’s Encrypt (Certbot)** avec un domaine
-
-> Si tu as un domaine pointant vers ta VM (ex : `prometheus.mondomaine.com`)
-
-### 1. Installe certbot
+Ensuite ajoute le dépôt stable :
 
 ```bash
-sudo apt install certbot python3-certbot-nginx -y
+echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
 ```
 
-### 2. Obtiens un certificat
+---
+
+## ✅ 4. Installer Grafana OSS
 
 ```bash
-sudo certbot --nginx -d prometheus.mondomaine.com
-```
-
-→ NGINX sera automatiquement reconfiguré avec HTTPS + renouvellement auto
-
----
-
-## 🔐 Bonus : durcir la config TLS (optionnel)
-
-Ajoute dans ton bloc `server` :
-
-```nginx
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ciphers HIGH:!aNULL:!MD5;
-ssl_prefer_server_ciphers on;
+sudo apt update
+sudo apt install grafana -y
 ```
 
 ---
 
-Souhaites-tu que je t’envoie :
+## ✅ 5. Activer et démarrer le service Grafana
 
-* Un script Bash automatique pour faire tout ça ?
-* Ou la même chose pour Grafana en HTTPS ?
+```bash
+sudo systemctl enable grafana-server
+sudo systemctl start grafana-server
+```
+
+Vérifie qu’il fonctionne :
+
+```bash
+sudo systemctl status grafana-server
+```
+
+---
+
+## ✅ 6. Accéder à Grafana
+
+Par défaut, Grafana est accessible sur le port **3000** :
+
+👉 Ouvre ton navigateur et va à :
+
+```
+http://<IP-de-la-machine>:3000
+```
+
+### ✅ Identifiants par défaut :
+
+* **Login** : `admin`
+* **Password** : `admin`
+
+Tu seras invité à modifier le mot de passe à la première connexion.
+
+---
+
+## ✅ 7. \[Optionnel] Ouvrir le port 3000 dans UFW
+
+```bash
+sudo ufw allow 3000
+```
+
+---
+
+## 🔧 Exemple : vérifier l’IP de la machine
+
+```bash
+ip a
+```
+
+---
+
+## 🔄 Mettre à jour Grafana plus tard
+
+```bash
+sudo apt update
+sudo apt upgrade grafana
+```
+
+---
+
+Souhaites-tu maintenant :
+
+* Ajouter **Prometheus comme source de données** dans Grafana ?
+* Créer des **dashboards personnalisés** pour CPU, RAM, disque ?
+* Installer Grafana via **Docker** à la place ?

@@ -1,159 +1,133 @@
-Parfait ! Tu veux activer **HTTPS** pour accéder à l’interface de Prometheus. C’est une **excellente pratique** pour sécuriser l’accès (chiffrement, protection contre l’interception, etc.).
+Excellente question ! Pour que **Prometheus récupère des métriques système depuis une VM Windows**, il faut installer un **exporter compatible Windows**, le plus courant étant :
+
+> 🧩 **Windows Exporter** (anciennement `wmi_exporter`)
 
 ---
 
-# ✅ Objectif
-
-* Accès à Prometheus via `https://IP_VM:443` (ou un domaine)
-* Utiliser **NGINX** comme **reverse proxy TLS** devant Prometheus
-* Avec **certificats SSL/TLS valides (Let’s Encrypt)** ou **auto-signés** selon les cas
+## ✅ Étapes pour exporter les métriques depuis une VM Windows
 
 ---
 
-## 📌 Deux solutions possibles :
+### 1. 📥 Télécharger Windows Exporter
 
-### ✅ **Solution 1 : Avec Let’s Encrypt** (recommandé si tu as un domaine public)
+Va sur la page officielle :
 
-* Gratuit, simple avec **Certbot**
-* Nécessite que la VM soit **accessible depuis Internet** (port 80 ouvert)
-* Résultat : certificat TLS signé par une autorité reconnue
+👉 [https://github.com/prometheus-community/windows\_exporter/releases](https://github.com/prometheus-community/windows_exporter/releases)
 
-### ✅ **Solution 2 : Certificat auto-signé**
+Télécharge le dernier `.msi`, par exemple :
 
-* Rapide pour usage **interne**
-* Le navigateur affichera une alerte, mais le trafic est bien chiffré
-
----
-
-# 🔧 Mise en place HTTPS avec NGINX
+```
+windows_exporter-0.25.1-amd64.msi
+```
 
 ---
 
-## 🔁 PRÉREQUIS
+### 2. 💾 Installer Windows Exporter
 
-* Prometheus tourne sur `localhost:9090`
-* NGINX est installé (`sudo apt install nginx`)
-* Authentification basique en place (facultatif)
-* Prometheus n'est **accessible que via NGINX**
+1. Double-clique sur le `.msi` téléchargé.
+2. Tu peux sélectionner les **collectors** que tu veux (ex: cpu, memory, disk, net, etc.)
+3. Finalise l’installation.
+   Cela installe un service Windows nommé `windows_exporter`.
+
+Par défaut, le service expose les métriques sur :
+
+```
+http://localhost:9182/metrics
+```
 
 ---
 
-## 🛠️ ÉTAPES POUR HTTPS (avec certificat auto-signé)
+### 3. 🔥 Autoriser le port 9182 dans le pare-feu Windows
+
+Dans PowerShell admin :
+
+```powershell
+New-NetFirewallRule -DisplayName "Windows Exporter" -Direction Inbound -Protocol TCP -LocalPort 9182 -Action Allow
+```
 
 ---
 
-### ✅ 1. Générer un certificat auto-signé
+### 4. 🧠 Vérifier que ça fonctionne
+
+Dans ton navigateur sur ta VM Windows :
+
+```
+http://localhost:9182/metrics
+```
+
+Tu dois voir un texte brut avec des lignes comme :
+
+```
+# HELP ...
+# TYPE ...
+windows_cpu_time_total{cpu="0",mode="idle"} 123456
+...
+```
+
+---
+
+### 5. 📡 Ajouter cette VM dans Prometheus
+
+Sur ta machine Prometheus (ex: Ubuntu), édite `prometheus.yml` :
+
+```yaml
+scrape_configs:
+  - job_name: 'windows-vm'
+    static_configs:
+      - targets: ['IP-WINDOWS:9182']
+```
+
+Par exemple :
+
+```yaml
+      - targets: ['192.168.56.101:9182']
+```
+
+Puis redémarre Prometheus :
 
 ```bash
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
- -keyout /etc/ssl/private/prometheus.key \
- -out /etc/ssl/certs/prometheus.crt \
- -subj "/C=FR/ST=Ile-de-France/L=Paris/O=Monitoring/OU=IT/CN=prometheus.local"
+sudo systemctl restart prometheus
 ```
 
 ---
 
-### ✅ 2. Configurer NGINX avec SSL
+### 6. ✅ Vérifier dans Prometheus
 
-Édite ou crée le fichier NGINX pour Prometheus :
+Va sur Prometheus (`http://<IP>:9090`) > "Status" > "Targets"
 
-```bash
-sudo nano /etc/nginx/sites-available/prometheus
+Tu dois voir :
+
 ```
-
-Contenu :
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name _;
-
-    ssl_certificate     /etc/ssl/certs/prometheus.crt;
-    ssl_certificate_key /etc/ssl/private/prometheus.key;
-
-    location / {
-        proxy_pass http://localhost:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-
-        auth_basic "Protected Prometheus";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-    }
-}
-
-# Optionnel : rediriger HTTP vers HTTPS
-server {
-    listen 80;
-    return 301 https://$host$request_uri;
-}
+windows-vm   |  UP   |  http://192.168.56.101:9182/metrics
 ```
 
 ---
 
-### ✅ 3. Activer le site et recharger NGINX
+## 📈 Exemples de métriques disponibles
 
-```bash
-sudo ln -s /etc/nginx/sites-available/prometheus /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
+Tu pourras ensuite interroger dans Prometheus ou Grafana :
 
-### Parefeu : 
-
-- sudo ufw status
-- sudo ufw allow 80/tcp
-- sudo ufw allow 443/tcp
-- sudo ufw reload
-
----
-
-### ✅ 4. Tester
-
-Ouvre dans ton navigateur :
-
-```
-https://[IP_VM]/
-```
-
-* Le navigateur affichera une **alerte de certificat non valide** (car auto-signé)
-* Tu peux l’accepter pour continuer
-* 🔐 Le trafic est maintenant **chiffré en HTTPS**
-
----
-
-## ✅ Variante : utiliser **Let’s Encrypt (Certbot)** avec un domaine
-
-> Si tu as un domaine pointant vers ta VM (ex : `prometheus.mondomaine.com`)
-
-### 1. Installe certbot
-
-```bash
-sudo apt install certbot python3-certbot-nginx -y
-```
-
-### 2. Obtiens un certificat
-
-```bash
-sudo certbot --nginx -d prometheus.mondomaine.com
-```
-
-→ NGINX sera automatiquement reconfiguré avec HTTPS + renouvellement auto
-
----
-
-## 🔐 Bonus : durcir la config TLS (optionnel)
-
-Ajoute dans ton bloc `server` :
-
-```nginx
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ciphers HIGH:!aNULL:!MD5;
-ssl_prefer_server_ciphers on;
+```promql
+windows_cpu_time_total{mode="user"}
+windows_os_physical_memory_free_bytes
+windows_logical_disk_free_bytes
+windows_net_bytes_received_total
 ```
 
 ---
 
-Souhaites-tu que je t’envoie :
+## 🎁 Bonus
 
-* Un script Bash automatique pour faire tout ça ?
-* Ou la même chose pour Grafana en HTTPS ?
+Tu peux aussi installer Windows Exporter avec plus d’options :
+
+```powershell
+.\windows_exporter.exe --collectors.enabled "cpu,cs,logical_disk,net,os,system"
+```
+
+---
+
+Souhaites-tu :
+
+* Un dashboard Grafana tout prêt pour Windows ?
+* Des alertes spécifiques (RAM basse, disque saturé) ?
+* Une configuration via Chocolatey en ligne de commande ?
