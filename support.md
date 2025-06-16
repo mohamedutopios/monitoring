@@ -252,7 +252,7 @@ Le **monitoring informatique** consiste à **surveiller en temps réel** l'état
 <div style="font-size:23px">
 
 
-### 📊 **Types de données gérés**
+###  **Types de données gérés**
 
 Prometheus collecte des **métriques formatées en texte** :
 
@@ -483,89 +483,100 @@ sudo systemctl enable prometheus
 
 ## Monitoring Linux + ESXi avec Prometheus
 
-### Étapes configuration réseau dans VMware ESXi
+### Configuration Prometheus
 
-<div style="font-size:24px">
+<div style="font-size:26px">
 
-
-#### 1. **Assurez-vous que toutes les VMs sont sur le même réseau**
-
-* Vérifiez que toutes vos VMs (Prometheus, node\_exporter, autres services) sont sur le **même vSwitch** ou le même **port group** dans ESXi.
-* Toutes les VMs doivent avoir des **IP dans le même sous-réseau** (ex : `192.168.1.0/24`).
-
-💡 Dans l'interface ESXi :
-
-* Allez dans **Networking > Virtual switches**
-* Vérifiez les **Port Groups** (ex : `VM Network`)
-* Assurez-vous que les VMs utilisent ce port group dans leurs paramètres.
-
-
-</div>
-
----
-
-## Monitoring Linux + ESXi avec Prometheus
-
-### Étapes configuration réseau dans VMware ESXi
-
-<div style="font-size:27px">
-
-<br>
-
-#### 2.  **Attribuez une IP statique ou réservable aux VMs**
-
-Pour éviter que les IPs changent :
-
-* Soit vous assignez des **IP statiques** à vos VMs Linux.
-* Soit vous configurez des **réservations DHCP** depuis votre routeur/serveur DHCP.
-
-</div>
-
----
-
-## Monitoring Linux + ESXi avec Prometheus
-
-### Étapes configuration réseau dans VMware ESXi
-
-<div style="font-size:25px">
-
-
-#### 3. **Ouvrir les ports nécessaires dans chaque VM (pare-feu)**
-
-Par défaut, Prometheus doit accéder aux autres VMs sur :
-
-| **Exporter**        | **Port par défaut** |
-| ------------------- | ------------------- |
-| Node Exporter       | `9100`              |
-| Blackbox Exporter   | `9115`              |
-| Custom app exporter | ex : `8000`, `3000` |
-
-Dans les VMs Linux (si `ufw` est actif) :
+### Structure typique de Prometheus
 
 ```bash
-sudo ufw allow 9100/tcp
-sudo ufw allow from <IP_PROMETHEUS> to any port 9100
+/etc/prometheus/
+├── prometheus.yml             # ✅ Fichier principal de configuration
+├── rules/                     # 📦 Dossier des rules (alerting/recording)
+│   ├── alerting_rules.yml     # 🚨 Règles d’alerte
+│   └── recording_rules.yml    # 🧮 Règles d’enregistrement
+├── file_sd/                   # 📄 Cibles statiques via fichiers JSON/YAML
+│   └── targets.json
+├── consoles/                  # 🎛 Fichiers pour interface web (console UI)
+├── console_libraries/         # 📚 Librairies pour les consoles personnalisées
+/var/lib/prometheus/           # 📂 Base de données locale (TSDB)
 ```
 
 </div>
 
 ---
 
-
 ## Monitoring Linux + ESXi avec Prometheus
 
-### Étapes configuration réseau dans VMware ESXi
+### Configuration Prometheus
 
 <div style="font-size:29px">
 
+### Qu’est-ce que `prometheus.yml` ?
 
-#### 4.  **Test réseau entre VMs**
+<br>
 
-Depuis la VM Prometheus :
+C’est le **fichier central** dans lequel Prometheus est configuré :
 
-```bash
-ping <ip_vm_target>
-curl http://<ip_vm_target>:9100/metrics
+* Quelle fréquence de collecte ? (`scrape_interval`)
+* Quelles cibles superviser ? (`scrape_configs`)
+* Où sont les règles d’alerte ou d’enregistrement ? (`rule_files`)
+* À quel Alertmanager envoyer les alertes ? (`alerting`)
+
+</div>
+
+---
+
+## Monitoring Linux + ESXi avec Prometheus
+
+### Configuration Prometheus
+
+<div style="font-size:22px">
+
+#### Structure générale
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['192.168.1.10:9100']
+
+rule_files:
+  - "rules/alerting_rules.yml"
+  - "rules/recording_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+```
+
+</div>
+
+---
+
+
+## Monitoring Linux + ESXi avec Prometheus
+
+### Configuration Prometheus
+
+<div style="font-size:25px">
+
+#### Détail par section
+
+### `global`
+
+Paramètres globaux appliqués à toutes les cibles (sauf si redéfinis localement).
+
+```yaml
+global:
+  scrape_interval: 15s          # Fréquence de scraping des cibles
+  scrape_timeout: 10s           # Délai maximum pour une réponse
+  evaluation_interval: 15s      # Fréquence d’évaluation des règles (alerting/recording)
 ```
 
 
@@ -575,31 +586,111 @@ curl http://<ip_vm_target>:9100/metrics
 
 ## Monitoring Linux + ESXi avec Prometheus
 
-### Étapes configuration réseau dans VMware ESXi
+### Configuration Prometheus
 
-<div style="font-size:25px">
+<div style="font-size:20px">
 
+#### Détail par section
 
-#### 5.  **Configurer Prometheus pour superviser les autres VMs**
+#### `scrape_configs`
 
-Modifiez `/etc/prometheus/prometheus.yml` :
+Liste des **cibles à superviser** (les exporters, services ou applications).
 
 ```yaml
 scrape_configs:
-  - job_name: 'node_exporters'
+  - job_name: 'node_exporter'
     static_configs:
-      - targets:
-          - '192.168.1.10:9100'
-          - '192.168.1.11:9100'
-          - '192.168.1.12:9100'
+      - targets: ['192.168.1.10:9100', '192.168.1.11:9100']
 ```
 
-Puis redémarrez Prometheus :
+ Chaque **job** représente un groupe logique de cibles.
 
-```bash
-sudo systemctl restart prometheus
+Tu peux aussi :
+
+* Utiliser **labels** :
+
+```yaml
+      - targets: ['host1:9100']
+        labels:
+          env: prod
 ```
 
+* Utiliser **relabel\_configs** (pour modifier les labels dynamiquement)
+
+</div>
+
+---
+
+## Monitoring Linux + ESXi avec Prometheus
+
+### Configuration Prometheus
+
+<div style="font-size:20px">
+
+#### Détail par section
+
+#### `rule_files`
+
+Liste des fichiers contenant des **alerting rules** ou **recording rules** :
+
+```yaml
+rule_files:
+  - "rules/alerting_rules.yml"
+  - "rules/recording_rules.yml"
+```
+
+📌 Ces fichiers contiennent des blocs `groups:` avec `rules:` à l’intérieur.
+
+
+#### `alerting`
+
+Définit **où envoyer les alertes** (vers Alertmanager).
+
+```yaml
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+```
+
+🧠 Prometheus ne gère pas lui-même les notifications, il envoie les alertes à **Alertmanager**.
+
+
+</div>
+
+---
+
+### Monitoring Linux + ESXi avec Prometheus
+
+#### Configuration Prometheus
+
+<div style="font-size:19px">
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['192.168.1.10:9100']
+        labels:
+          instance: server01
+      - targets: ['192.168.1.11:9100']
+        labels:
+          instance: server02
+rule_files:
+  - "rules/alerting_rules.yml"
+  - "rules/recording_rules.yml"
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+```
 
 </div>
 
@@ -1029,14 +1120,36 @@ http_requests_total{method="GET", status="200", instance="192.168.1.10:8080"} 12
 
 <div style="font-size:35px">
 
-#### Types de métriques
+#### Règle générale
 
-| Type        | Description                               | Exemple typique                        |
-| ----------- | ----------------------------------------- | -------------------------------------- |
-| `Counter`   | Cumul qui **augmente seulement**          | `http_requests_total`                  |
-| `Gauge`     | Valeur qui peut **monter et descendre**   | `memory_usage_bytes`, `cpu_temp`       |
-| `Histogram` | Découpe des valeurs en **intervalles**    | `http_request_duration_seconds_bucket` |
-| `Summary`   | Calcule des **quantiles** + count + somme | `rpc_duration_seconds`                 |
+<br>
+
+```text
+<contexte>_<type de donnée>_<unité éventuelle>
+```
+
+Cela suit la convention [Prometheus Naming Best Practices](https://prometheus.io/docs/practices/naming/).
+
+---
+
+#### Node Exporter
+
+
+<div style="font-size:20px">
+
+
+| Préfixe      | Signification                         | Source habituelle           |
+| ------------ | ------------------------------------- | --------------------------- |
+| `node_`      | 🔧 Données système (machine, OS)      | `node_exporter`             |
+| `http_`      | 🌐 Requêtes HTTP (serveur ou client)  | Applications instrumentées  |
+| `rpc_`       | 🔄 Appels RPC (Remote Procedure Call) | Services distribués / gRPC  |
+| `process_`   | ⚙️ Processus local supervisé          | Prometheus lui-même ou apps |
+| `go_`        | 🐹 Statistiques sur la VM Go          | App écrite en Go            |
+| `kube_`      | ☸️ État de Kubernetes (Pods, etc.)    | `kube-state-metrics`        |
+| `container_` | 🐳 Statistiques conteneurs            | cAdvisor / kubelet          |
+| `nginx_`     | 🌐 Métriques NGINX                    | `nginx_exporter`            |
+| `mysql_`     | 🗄️ Métriques MySQL                   | `mysqld_exporter`           |
+| `redis_`     | 🧠 Métriques Redis                    | `redis_exporter`            |
 </div>
 
 ---
@@ -1045,13 +1158,106 @@ http_requests_total{method="GET", status="200", instance="192.168.1.10:8080"} 12
 
 ### Qu'est ce que les metrics
 
-<div style="font-size:30px">
+<div style="font-size:35px">
 
-#### Comment sont collectées les métriques ?
+#### Exemples concrets
 
-1. Prometheus **scrape** (interroge) ses cibles à intervalles réguliers (ex : toutes les 15s).
-2. Chaque cible (exporter ou app instrumentée) expose des métriques sur un endpoint `/metrics`.
-3. Prometheus stocke les valeurs et les étiquettes dans sa base de données en séries temporelles.
+##### `node_` (machine physique ou VM)
+
+```text
+node_cpu_seconds_total{mode="idle"}
+node_memory_Active_bytes
+node_network_receive_bytes_total
+```
+
+📌 Signifie : CPU, mémoire ou réseau **de la machine**.
+
+
+</div>
+
+---
+
+## Node Exporter
+
+### Qu'est ce que les metrics
+
+<div style="font-size:35px">
+
+#### Exemples concrets
+
+##### `http_` (trafic HTTP)
+
+```text
+http_requests_total{method="GET"}
+http_request_duration_seconds_bucket{le="0.5"}
+```
+
+📌 Requêtes HTTP traitées, avec détails sur la méthode et les temps de réponse.
+
+
+</div>
+
+---
+
+## Node Exporter
+
+### Qu'est ce que les metrics
+
+<div style="font-size:35px">
+
+#### Exemples concrets
+
+##### `rpc_` (appels distants)
+
+```text
+rpc_duration_seconds{quantile="0.99"}
+rpc_calls_total
+```
+
+📌 Appels RPC effectués par ou vers un service distribué (ex : gRPC).
+
+
+</div>
+
+---
+
+## Node Exporter
+
+### Qu'est ce que les metrics
+
+<div style="font-size:35px">
+
+#### Exemples concrets
+
+##### `process_` (processus Prometheus ou application)
+
+```text
+process_cpu_seconds_total
+process_resident_memory_bytes
+```
+
+📌 Utilisation CPU et mémoire **du processus lui-même**.
+
+</div>
+
+---
+
+## Node Exporter
+
+### Qu'est ce que les metrics
+
+<div style="font-size:35px">
+
+#### Exemples concrets
+
+##### `go_` (runtime Go)
+
+```text
+go_goroutines
+go_memstats_alloc_bytes
+```
+
+📌 Informations sur la mémoire et les goroutines **du runtime Go**.
 
 </div>
 
@@ -1530,151 +1736,7 @@ Vous pouvez aussi importer un dashboard tout fait :
 
 </div>
 
----
 
-## Node Exporter
-
-### Introduction à **vmware\_exporter** (Exporter ESXi)
-
-<div style="font-size:27px">
-
-####  **Qu’est-ce que `vmware_exporter` ?**
-
-**`vmware_exporter`** est un outil **open source** qui se connecte à un **vCenter** ou directement à un **hôte ESXi**, et expose des **métriques système, VM, et datastore** au format **Prometheus**.
-
-> 🎯 Il permet de **monitorer un cluster VMware ou un hyperviseur ESXi** avec les outils modernes Prometheus + Grafana.
-
-</div>
-
----
-
-### Node Exporter
-
-#### Introduction à **vmware\_exporter** (Exporter ESXi)
-
-<div style="font-size:26px">
-
-####  **Fonctionnement**
-
-```
-[ ESXi / vCenter ]
-        ↑ (via API)
-[ vmware_exporter ]
-        ↓ (HTTP :9100 ou autre)
-[ Prometheus ]
-        ↓
-[ Grafana / Alertmanager ]
-```
-
-* Se connecte via l'**API vSphere** (HTTPS, port 443)
-* Utilise un **compte VMware avec accès lecture seule**
-* Expose les métriques sur un port HTTP (ex : 9272)
-* Compatible avec Prometheus via **scrape config**
-
-</div>
-
----
-
-### Node Exporter
-
-#### Introduction à **vmware\_exporter** (Exporter ESXi)
-
-<div style="font-size:26px">
-
-#### **Métriques collectées**
-
-| Type               | Exemples de métriques                            |
-| ------------------ | ------------------------------------------------ |
-| **Hôtes ESXi**     | CPU usage, RAM usage, état des hôtes             |
-| **VMs**            | état de marche, CPU, RAM, disque, latence réseau |
-| **Datastores**     | capacité, utilisation, taux d’IO                 |
-| **Snapshots**      | VMs avec snapshots, taille, durée                |
-| **Réseau virtuel** | packets TX/RX, erreurs                           |
-
-</div>
-
----
-
-### Node Exporter
-
-#### Introduction à **vmware\_exporter** (Exporter ESXi)
-
-<div style="font-size:26px">
-
-### **Pré-requis**
-
-* Un **vCenter** ou **ESXi avec accès SSH/API activé**
-* Un **compte utilisateur VMware (lecture seule)** avec accès à l'inventaire
-* Une **VM Linux** dédiée à `vmware_exporter`
-
-</div>
-
----
-
-### Node Exporter
-
-#### Introduction à **vmware\_exporter** (Exporter ESXi)
-
-<div style="font-size:22px">
-
-####  Exemple de configuration Prometheus
-
-```yaml
-scrape_configs:
-  - job_name: 'vmware'
-    static_configs:
-      - targets: ['<ip_exporter>:9272']
-```
-
-#### 📘 **Commandes typiques**
-
-Démarrage :
-
-```bash
-python3 vmware_exporter/vmware_exporter.py \
-  --vsphere-host <IP_ESXI> \
-  --vsphere-user <user> \
-  --vsphere-password <password>
-```
-
-Optionnel :
-
-* Peut être exécuté via `systemd`
-* Peut être containerisé avec Docker
-
-</div>
-
----
-
-### Node Exporter
-
-#### Introduction à **vmware\_exporter** (Exporter ESXi)
-
-<div style="font-size:18px">
-
-### **Visualisation dans Grafana**
-
-Il existe plusieurs dashboards prêts à l’emploi sur Grafana.com, ex :
-
-* Dashboard ID **11527** : vSphere Overview
-* Dashboard ID **13978** : vSphere Performance Metrics
-
-
-### **Avantages**
-
-* Léger, rapide, efficace
-* Compatible Prometheus/Grafana
-* Supporte **vCenter + ESXi**
-* Collecte des métriques **indisponibles dans les exporters système**
-
-
-### Limitations
-
-* Ne collecte pas de **logs**, seulement des **métriques**
-* API vSphere peut être lente (ajustez l’intervalle de scraping)
-* Nécessite parfois **Python 3.8+** et `pyvmomi`
-
-</div>
 
 ---
 

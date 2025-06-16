@@ -103,6 +103,4 @@ rule_files:
 | 🕒 Évaluation      | Régulière, stockée dans Prometheus | Régulière, mais pas stockée       |
 | 🛠 Usage principal | Dashboards, performance            | Supervision, incidents            |
 
----
 
-Souhaites-tu maintenant un exemple **complet** avec **Prometheus + Alertmanager + Slack ou email** pour illustrer une alerte réelle ?
