@@ -1536,49 +1536,6 @@ increase(http_requests_total[15m])
 
 ---
 
-### Node Exporter
-
-#### PromQl
-
-<div style="font-size:19px">
-
-
-### 6. ⚠️ Exemples utiles
-
-#### Services qui ne répondent plus :
-
-```promql
-up == 0
-```
-
-#### CPU utilisé par core :
-
-```promql
-rate(node_cpu_seconds_total{mode="user"}[5m])
-```
-
-#### RAM utilisée en pourcentage :
-
-```promql
-100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
-```
-
-#### Répartition des requêtes par statut HTTP :
-
-```promql
-sum(rate(http_requests_total[5m])) by (status)
-```
-
-#### Mémoire utilisée par instance :
-
-```promql
-node_memory_Active_bytes{job="node_exporter"}
-```
-
-</div>
-
----
-
 #### Node Exporter
 
 ##### Visualisation des métriques système (CPU, RAM, disque)
@@ -1746,7 +1703,7 @@ Vous pouvez aussi importer un dashboard tout fait :
 
 ## Grafana, Alertes et Dashboards VMware
 
----
+
 
   
 
