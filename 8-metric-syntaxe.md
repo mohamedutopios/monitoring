@@ -1,7 +1,3 @@
-Excellente question 👌 ! Les préfixes comme `node_`, `http_`, `rpc_` dans les noms de métriques Prometheus **indiquent la provenance** ou le **contexte fonctionnel** de la métrique.
-
----
-
 ## 🧠 Règle générale
 
 ```text
@@ -113,6 +109,4 @@ Quand tu instrumentes tes propres applications :
   * `auth_failed_logins_total`
   * `billing_invoice_duration_seconds`
 
----
 
-Souhaites-tu une **fiche de correspondance complète** par exporteur avec les préfixes et leurs métriques typiques ?

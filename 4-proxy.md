@@ -1,10 +1,3 @@
--# ✅ 🔐 Tutoriel pas à pas pour mettre en place l'authentification basique sur Prometheus
-
-> 👇 Ce guide suit **exactement** la méthode proposée par Prometheus.io
-> VM Linux Ubuntu/Debian avec Prometheus déjà en place sur `localhost:9090`
-
----
-
 ## 🧩 ÉTAPE 1 — Installer NGINX et les outils nécessaires
 
 ```bash
@@ -114,10 +107,4 @@ sudo systemctl restart prometheus
 
 > Ainsi, seul NGINX pourra le joindre via `localhost:9090`, et **toute connexion externe passe par le reverse proxy sécurisé**.
 
----
 
-Souhaites-tu :
-
-* Ajouter aussi un certificat HTTPS avec Let’s Encrypt ?
-* Protéger d'autres endpoints (`/metrics`) différemment ?
-* Ou créer un équivalent pour Grafana également ?

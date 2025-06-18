@@ -1,7 +1,3 @@
-Voici une **sélection des meilleurs dashboards Grafana** pour une supervision complète avec **Prometheus**, classés par usage (système, réseau, services, etc.), avec leurs **ID d'importation Grafana.com**.
-
----
-
 ## 🧰 DASHBOARDS INDISPENSABLES POUR PROMETHEUS
 
 ### 🔹 1. **Node Exporter Full**
@@ -105,6 +101,4 @@ Voici une **sélection des meilleurs dashboards Grafana** pour une supervision c
 3. Sélectionne ta **source Prometheus**
 4. Clique sur **Import**
 
----
 
-Souhaites-tu que je te crée un **dashboard combiné** avec les métriques essentielles CPU, RAM, disque, uptime et alertes, pour plusieurs VM ?

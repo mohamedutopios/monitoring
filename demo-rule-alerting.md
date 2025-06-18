@@ -1,11 +1,3 @@
-Voici une **série complète de règles d'alerte Prometheus (Alerting Rules)** avec des exemples pour :
-
-* 🔧 *détection CPU/RAM/disque réseau*
-* 📦 *format Prometheus*
-* 🧪 *comment les déclencher avec des stress tests (`stress`, `dd`, `curl`, etc.)*
-
----
-
 ## ✅ 1. Exemple de fichier `alerting_rules.yml`
 
 ```yaml

@@ -1,9 +1,3 @@
-Parfait, tu as déjà une **excellente série de requêtes PromQL** ! Maintenant, pour **voir évoluer ces métriques en temps réel**, tu peux déclencher des **stress tests** ciblés sur ta ou tes machines surveillées (Linux ou Windows) pour **générer de la charge CPU, mémoire, disque ou réseau**.
-
-Voici **comment simuler ces charges**, avec des outils simples à installer.
-
----
-
 ## 🔧 Sur une machine Linux (ex: `vm1:9100` avec Node Exporter)
 
 ### ✅ 1. Stress CPU
@@ -148,6 +142,3 @@ groups:
           description: "La machine {{ $labels.instance }} a un CPU user > 80% pendant plus d'1 minute."
 ```
 
----
-
-Souhaites-tu un script shell ou PowerShell automatisé qui déclenche plusieurs charges en série pour tester tous les cas d’usage ?

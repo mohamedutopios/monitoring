@@ -1,7 +1,3 @@
-Voici une explication complète et claire des **métriques avec Prometheus**, incluant les **concepts**, **types de métriques**, et **exemples concrets** :
-
----
-
 ## 🧠 Concepts clés des métriques dans Prometheus
 
 1. **Métrique**
@@ -121,6 +117,4 @@ rate(node_cpu_seconds_total{mode="user"}[1m])
 * `vmware_exporter`, `mysqld_exporter`, `nginx_exporter`, etc.
 * Ou directement depuis votre **application instrumentée** avec des bibliothèques Prometheus (Go, Java, Python…).
 
----
 
-Souhaitez-vous un exemple **complet de métrique personnalisée** dans une application (ex: en Python ou Java) ? Ou une démonstration de dashboard Grafana lié à ces métriques ?

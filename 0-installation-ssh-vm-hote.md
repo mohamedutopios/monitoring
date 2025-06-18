@@ -1,6 +1,3 @@
-Parfait, voici un **guide complet étape par étape** pour **configurer une connexion SSH (avec mot de passe ou automatisée)** **depuis une machine Windows vers une VM Ubuntu**.
-
----
 
 ## ✅ Côté Ubuntu (la VM cible)
 
@@ -114,9 +111,4 @@ sshpass -p 'motdepasse' ssh -o StrictHostKeyChecking=no user@192.168.x.x
 | A     | Tester connexion avec `ssh user@ip`                |
 | B     | Optionnel : automatiser avec `sshpass` ou `expect` |
 
----
 
-Souhaites-tu aussi :
-
-* un **script de vérification automatique** côté Ubuntu ?
-* ou un **tutoriel complet pour configurer des connexions SSH par clé (sécurisé)** ?

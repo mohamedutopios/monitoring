@@ -76,6 +76,3 @@ Les recording rules sont **réévaluées automatiquement à chaque intervalle** 
 | Stocke le résultat comme une métrique  | Envoie une notification (via Alertmanager)      |
 | Optimise les dashboards et les alertes | Sert à la supervision directe                   |
 
----
-
-Souhaites-tu un exemple pratique de **recording rule avec le CPU**, ou un exemple de projet complet avec dashboards et alertes ?

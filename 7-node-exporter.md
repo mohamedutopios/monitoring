@@ -1,7 +1,3 @@
-Voici un **pas-à-pas simple et clair** pour installer et lancer **Node Exporter** sur une VM Linux (par exemple Ubuntu Server, Debian, Alpine, etc.), afin que **Prometheus** puisse collecter les métriques.
-
----
-
 ## ✅ Étapes pour installer Node Exporter
 
 ### 🔹 1. Connexion SSH à la VM

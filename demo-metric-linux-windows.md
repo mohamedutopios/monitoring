@@ -1,7 +1,3 @@
-Avec cette configuration `scrape_configs`, tu as **trois cibles Prometheus** que tu peux interroger avec PromQL, et chacune expose des **métriques différentes** selon l'exporter utilisé :
-
----
-
 ### 🔎 Résumé de tes targets
 
 | `job_name`   | Target                 | Exporter utilisé     | Type de métriques disponibles                           |
@@ -147,6 +143,3 @@ windows_system_system_up_time
   rate(windows_cpu_time_total{name="windows"}[5m])
   ```
 
----
-
-Souhaites-tu que je te génère un **dashboard Grafana** simple pour chacun de ces jobs ? Ou veux-tu que je t'aide à créer des **alertes Prometheus** sur ces métriques ?

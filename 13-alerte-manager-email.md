@@ -100,19 +100,16 @@ global:
   smtp_auth_password: 'DVVpcjQZsRM1NBRUY7HAqw'
   smtp_require_tls: true
 
-  # Slack API globale si besoin
-  # (aucune config Slack ici : elle est dans le receiver)
-
 route:
   group_by: ['alertname']
   group_wait: 10s
   group_interval: 30s
   repeat_interval: 2h
-  receiver: 'default-receiver'  # fallback
+  receiver: 'default-receiver'
   routes:
     - receiver: 'slack-notifications'
       match:
-        severity: critical
+        severity: test
     - receiver: 'mail-proton'
       match:
         severity: info

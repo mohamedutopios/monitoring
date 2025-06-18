@@ -1,7 +1,3 @@
-Voici une vue claire et détaillée des **principaux dossiers et fichiers utilisés par Prometheus**, leur rôle, et leur utilité dans un déploiement typique :
-
----
-
 ## 📁 Structure typique de Prometheus
 
 ```bash
@@ -128,7 +124,3 @@ scrape_configs:
 | `/etc/systemd/system/prometheus.service` | Unité systemd pour lancer Prometheus                    |
 | `/usr/local/bin/prometheus`              | Binaire Prometheus                                      |
 | `/usr/local/bin/promtool`                | Outil de validation de config/règles (`promtool check`) |
-
----
-
-Souhaites-tu que je te prépare un exemple **complet d’arborescence + contenu de fichiers pour un projet de monitoring réel** (avec node\_exporter, alerting, et Slack) ?

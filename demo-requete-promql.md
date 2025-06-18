@@ -1,7 +1,3 @@
-Voici une **série variée de requêtes PromQL** classées par type, avec à la fin des exemples spécifiques pour cibler **une machine en particulier**.
-
----
-
 ## 🔹 1. **Requêtes simples de métriques**
 
 ```promql
@@ -140,6 +136,4 @@ Exemple :
 rate(node_cpu_seconds_total{job="node", instance="vm-dc1-prod-01:9100", mode="user"}[5m])
 ```
 
----
 
-Souhaites-tu que je t’écrive des requêtes spécifiques pour ton environnement ou ton infrastructure ?

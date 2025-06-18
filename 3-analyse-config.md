@@ -1,7 +1,3 @@
-Excellente question ! Voici une **explication complète et structurée du fichier `prometheus.yml`**, le **fichier de configuration principal de Prometheus**.
-
----
-
 ## 📄 Qu’est-ce que `prometheus.yml` ?
 
 C’est le **fichier central** dans lequel Prometheus est configuré :
@@ -153,6 +149,4 @@ alerting:
 | `rule_files`     | Fichiers de règles (alerte + métriques dérivées) |
 | `alerting`       | Vers quel Alertmanager envoyer les alertes       |
 
----
 
-Souhaites-tu un **modèle prêt à l’emploi** pour surveiller un service avec alertes (et envoi Slack ou mail via Alertmanager) ?

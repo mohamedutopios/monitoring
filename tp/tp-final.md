@@ -1,17 +1,12 @@
-Parfait ! Voici **un énoncé détaillé** et **structuré**, avec les objectifs pédagogiques et les étapes guidées sans donner les solutions techniques directement. Cet énoncé peut être utilisé dans un TP réel pour des apprenants en supervision/systèmes.
-
----
-
 # 🧪 TP : Supervision et Alerting Multi-VM avec Prometheus, Grafana, Alertmanager et Node Exporter
 
----
+
 
 ## 🎯 Objectif du TP
 
 Vous allez mettre en place une **infrastructure complète de supervision** basée sur **Prometheus, Grafana, Alertmanager** et **Node Exporter**, répartie sur **3 machines virtuelles Ubuntu**.
-Le but est de surveiller l’état des serveurs, de déclencher des alertes (par mail ou Slack), et de visualiser l’ensemble dans un dashboard personnalisé.
+Le but est de surveiller l’état des serveurs, de déclencher des alertes (par mail ou Slack), et de visualiser l’ensemble dans un dashboard personnalisé (ou existant dans une banque de donnée Grafana).
 
----
 
 ## 🖥️ Environnement de travail
 
@@ -21,13 +16,13 @@ Le but est de surveiller l’état des serveurs, de déclencher des alertes (par
 | `vm-server1`    | Serveur supervisé n°1 (avec Node Exporter)                   |
 | `vm-server2`    | Serveur supervisé n°2 (avec Node Exporter)                   |
 
-> Les 3 machines tournent sur VMware Workstation (pas d'ESXi).
+> # Les 3 machines tournent sur VMware Workstation (pas d'ESXi) !!
 
----
 
-## 🧩 Étapes du TP (avec explication)
 
----
+## 🧩 Étapes du TP
+
+
 
 ### 🔹 Étape 1 — Préparation des machines
 
@@ -35,7 +30,7 @@ Le but est de surveiller l’état des serveurs, de déclencher des alertes (par
 2. Mettez à jour les paquets et installez les utilitaires de base nécessaires.
 3. Donnez un **nom d’hôte explicite** à chaque machine (`vm-prometheus`, `vm-server1`, `vm-server2`).
 
----
+
 
 ### 🔹 Étape 2 — Installation des composants
 
@@ -53,7 +48,7 @@ Le but est de surveiller l’état des serveurs, de déclencher des alertes (par
 * Installez **Node Exporter**
 * Assurez-vous qu’il s’exécute comme un service et expose les métriques sur le port 9100.
 
----
+
 
 ### 🔹 Étape 3 — Configuration de Prometheus
 
@@ -61,7 +56,7 @@ Le but est de surveiller l’état des serveurs, de déclencher des alertes (par
 2. Associez des **labels clairs** à chaque instance (ex : `instance: server1`, `instance: server2`).
 3. Mettez en place un dossier dédié pour les règles (`rules/`) et préparez Prometheus à charger vos futures règles d’alerte.
 
----
+
 
 ### 🔹 Étape 4 — Création des règles d’alerte
 
@@ -75,7 +70,7 @@ Vous devez créer deux règles dans un fichier dédié :
 
 > Chaque règle devra contenir une **description claire** et un **niveau de sévérité**.
 
----
+
 
 ### 🔹 Étape 5 — Configuration d’Alertmanager
 
@@ -88,13 +83,13 @@ Vous devez créer deux règles dans un fichier dédié :
 
 3. Vérifiez que la configuration est bien prise en compte au redémarrage du service.
 
----
+
 
 ### 🔹 Étape 6 — Configuration de Grafana
 
 1. Connectez Grafana à Prometheus comme source de données.
 
-#### Option 1 : 
+#### Option 2 : Creation de son dashboard
 
 2. Créez un **dashboard unique** avec les éléments suivants :
 
@@ -105,7 +100,16 @@ Vous devez créer deux règles dans un fichier dédié :
 
 3. Organisez votre dashboard de façon claire et exploitable.
 
----
+#### Option 1 : Utilisation Dashboard propoosé par Grafana
+
+Le **dashboard** ou les **dashboard** aura, à minima, les éléments suivants :
+
+   * Utilisation disque pour `vm-server1`
+   * Charge système pour `vm-server2`
+   * CPU et RAM pour les deux serveurs
+   * Un panneau qui affiche l’état des alertes actives
+
+
 
 ### 🔹 Étape 7 — Vérification des alertes et simulation
 
@@ -121,7 +125,6 @@ Vous devez créer deux règles dans un fichier dédié :
 
 > Vérifiez aussi que l’information est visible et cohérente sur le dashboard Grafana.
 
----
 
 ### 🔹 Étape 8 — Rendu et validation
 
@@ -135,14 +138,4 @@ Chaque binôme devra fournir :
    * Comment la configuration des routes Alertmanager a été pensée
    * Ce qui pourrait être amélioré pour une production réelle
 
----
 
-## 📝 Contraintes
-
-* Le TP doit être réalisable **sans connexion Internet** (prévoir les fichiers `.tar.gz` en local).
-* Ne pas utiliser ESXi, mais **uniquement les 3 VMs sous VMware Workstation**.
-* Chaque configuration doit être claire, commentée et versionnée si possible.
-
----
-
-Souhaites-tu que je te propose une **version imprimable en PDF** ou un **dossier `.zip` avec l’arborescence vide + README** pour distribuer ce TP ?

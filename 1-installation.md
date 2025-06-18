@@ -1,7 +1,3 @@
-Voici un guide **complet, propre et structuré** pour **installer Prometheus** sur une VM Linux (Ubuntu ou Debian), avec les **bonnes pratiques** en production légère (service, utilisateur dédié, permissions, etc.).
-
----
-
 # 📦 Installer Prometheus sur une VM Linux
 
 ### ✅ Compatible : Ubuntu 22.04+, Debian 11+, Rocky/Alma/RHEL (adaptable)

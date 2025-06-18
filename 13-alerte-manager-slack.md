@@ -1,8 +1,3 @@
-Parfait, ravi que ça fonctionne ! 🎉
-Voici un **récapitulatif complet, propre et structuré**, pour mettre en place **Alertmanager avec Slack**, **de zéro à 100 % fonctionnel** ✅
-
----
-
 # 🚀 Mise en place d'Alertmanager avec Slack
 
 ---
@@ -126,12 +121,4 @@ curl -X POST -H 'Content-type: application/json' \
   https://hooks.slack.com/services/Txxxx/Bxxxx/xxxxxxxxxxxx
 ```
 
----
 
-Souhaites-tu maintenant :
-
-* 💬 Des alertes plus avancées (CPU, RAM, disque…) ?
-* 📊 Un lien vers Grafana dans le message Slack ?
-* 📁 Un **pack compressé `.tar.gz`** prêt à déployer ?
-
-Je peux te préparer ça.

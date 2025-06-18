@@ -1,5 +1,3 @@
-Voici un **récapitulatif clair, précis et sécurisé** de la configuration du **pare-feu (UFW ou autre)** à appliquer sur :
-
 1. ✅ La **VM Prometheus** (celle qui collecte les métriques)
 2. ✅ Les **VMs exportant les métriques** (avec `node_exporter` ou `windows_exporter`)
 
@@ -102,9 +100,3 @@ Tu dois recevoir un grand bloc de texte commençant par :
 # HELP go_gc_duration_seconds A summary of the pause duration...
 ```
 
----
-
-Souhaites-tu :
-
-* Un script Bash de déploiement automatique de ces règles ?
-* Une vérification automatisée que chaque cible est bien UP dans Prometheus ?

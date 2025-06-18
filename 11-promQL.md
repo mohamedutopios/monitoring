@@ -1,7 +1,3 @@
-Très bien ! Voici une **présentation complète de PromQL** (Prometheus Query Language), avec la **théorie**, la **syntaxe**, et des **exemples pratiques**.
-
----
-
 # 🧠 Introduction à PromQL
 
 **PromQL** est le langage utilisé par Prometheus pour **interroger, filtrer, agréger et transformer** les séries temporelles de métriques.
@@ -202,6 +198,4 @@ increase(http_requests_total[15m])
 * Onglet **Graph** ou **Console**
 * Également dans **Grafana**, dans les panels de type "Time series"
 
----
 
-Souhaites-tu maintenant une **fiche d'exercices avec corrigé** sur PromQL ? Ou un TP de supervision réel avec ces requêtes dans Grafana ?

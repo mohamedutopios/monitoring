@@ -1,7 +1,3 @@
-### 📌 Qu’est-ce que les **métriques dans Prometheus** ?
-
----
-
 ## 🧠 Définition
 
 > Une **métrique** dans Prometheus est une **valeur numérique collectée à un instant donné**, associée à un **nom** et à des **étiquettes (labels)**. Elle représente un **comportement observable du système**, par exemple :
@@ -72,6 +68,3 @@ node_cpu_seconds_total{cpu="0", mode="user", instance="vm1:9100"} 12483.56
 2. Chaque cible (exporter ou app instrumentée) expose des métriques sur un endpoint `/metrics`.
 3. Prometheus stocke les valeurs et les étiquettes dans sa base de données en séries temporelles.
 
----
-
-Souhaites-tu un exemple d'application **qui expose ses propres métriques**, ou un aperçu de l’export d’un `node_exporter` en direct ?

@@ -1,5 +1,3 @@
-Excellente question ! Pour que **Prometheus récupère des métriques système depuis une VM Windows**, il faut installer un **exporter compatible Windows**, le plus courant étant :
-
 > 🧩 **Windows Exporter** (anciennement `wmi_exporter`)
 
 ---
@@ -124,10 +122,4 @@ Tu peux aussi installer Windows Exporter avec plus d’options :
 .\windows_exporter.exe --collectors.enabled "cpu,cs,logical_disk,net,os,system"
 ```
 
----
 
-Souhaites-tu :
-
-* Un dashboard Grafana tout prêt pour Windows ?
-* Des alertes spécifiques (RAM basse, disque saturé) ?
-* Une configuration via Chocolatey en ligne de commande ?

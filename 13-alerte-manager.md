@@ -1,15 +1,3 @@
-Très bien ! Voici un **tutoriel complet et fonctionnel** pour installer **Alertmanager** avec **Prometheus**, et envoyer des **notifications email via Gmail**.
-
----
-
-## 🧰 Prérequis
-
-* Prometheus déjà installé sur `/etc/prometheus/`
-* Ports ouverts (9093 pour Alertmanager)
-* Un compte Gmail avec mot de passe d'application (important !)
-
----
-
 ## ✅ Étape 1 — Installer Alertmanager
 
 ```bash
@@ -140,9 +128,4 @@ sudo systemctl restart prometheus
 4. Génére un mot de passe (par exemple pour "Autre > Alertmanager")
 5. Utilise ce mot dans `smtp_auth_password`
 
----
 
-Souhaites-tu :
-
-* Un script `bash` d'installation complet ?
-* Ajouter Slack, Telegram ou Discord comme canaux aussi ?

@@ -1,7 +1,3 @@
-Voici un **guide clair et complet** pour connecter **Grafana à Prometheus**.
-
----
-
 ## ✅ Prérequis
 
 * ✅ **Grafana** est installé et accessible sur `http://<ip>:3000`
@@ -82,10 +78,3 @@ rate(node_network_receive_bytes_total[1m])
 node_filesystem_avail_bytes
 ```
 
----
-
-Souhaites-tu ensuite :
-
-* Un **dashboard clé-en-main pour Grafana** (CPU, RAM, disque) ?
-* Ajouter **Alertmanager** dans Grafana ?
-* Visualiser les **alertes Prometheus dans Grafana** ?

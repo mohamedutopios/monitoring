@@ -1,0 +1,148 @@
+
+		<head>
+			<style type="text/css" media="screen">
+				body,html{font-family:var(--markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans", sans-serif);font-size:var(--markdown-font-size,14px);padding:0 26px;line-height:var(--markdown-line-height,22px);word-wrap:break-word}body{padding-top:1em}h1,h2,h3,h4,h5,h6,ol,p,pre,ul{margin-top:0}h2,h3,h4,h5,h6{font-weight:400;margin-bottom:.2em}img{max-width:100%;max-height:100%}a{text-decoration:none}a:hover{text-decoration:underline}a:focus,input:focus,select:focus,textarea:focus{outline:1px solid -webkit-focus-ring-color;outline-offset:-1px}p{margin-bottom:.7em}ol,ul{margin-bottom:.7em}hr{border:0;height:2px;border-bottom:2px solid}h1{padding-bottom:.3em;line-height:1.2;border-bottom-width:1px;border-bottom-style:solid;font-weight:400}table{border-collapse:collapse}th{text-align:left;border-bottom:1px solid}td,th{padding:5px 10px}table>tbody>tr+tr>td{border-top:1px solid}blockquote{margin:0 7px 0 5px;padding:0 16px 0 10px;border-left-width:5px;border-left-style:solid}code{font-family:var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, "Ubuntu Mono", "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace);font-size:1em;line-height:1.357em}body.wordWrap pre{white-space:pre-wrap}pre.hljs code>div,pre:not(.hljs){padding:16px;border-radius:3px;overflow:auto}pre code{color:var(--vscode-editor-foreground);tab-size:4}
+			</style>
+		</head>
+		<body>
+			<h1 id="🧪-tp--supervision-et-alerting-multi-vm-avec-prometheus-grafana-alertmanager-et-node-exporter">🧪 TP : Supervision et Alerting Multi-VM avec Prometheus, Grafana, Alertmanager et Node Exporter</h1>
+<h2 id="🎯-objectif-du-tp">🎯 Objectif du TP</h2>
+<p>Vous allez mettre en place une <strong>infrastructure complète de supervision</strong> basée sur <strong>Prometheus, Grafana, Alertmanager</strong> et <strong>Node Exporter</strong>, répartie sur <strong>3 machines virtuelles Ubuntu</strong>.
+Le but est de surveiller l’état des serveurs, de déclencher des alertes (par mail ou Slack), et de visualiser l’ensemble dans un dashboard personnalisé (ou existant dans une banque de donnée Grafana).</p>
+<h2 id="🖥️-environnement-de-travail">🖥️ Environnement de travail</h2>
+<table>
+<thead>
+<tr>
+<th>Nom de la VM</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>vm-prometheus</code></td>
+<td>Serveur de supervision (Prometheus + Grafana + Alertmanager)</td>
+</tr>
+<tr>
+<td><code>vm-server1</code></td>
+<td>Serveur supervisé n°1 (avec Node Exporter)</td>
+</tr>
+<tr>
+<td><code>vm-server2</code></td>
+<td>Serveur supervisé n°2 (avec Node Exporter)</td>
+</tr>
+</tbody></table>
+<blockquote>
+<h1 id="les-3-machines-tournent-sur-vmware-workstation-pas-desxi-">Les 3 machines tournent sur VMware Workstation (pas d&#39;ESXi) !!</h1>
+</blockquote>
+<h2 id="🧩-étapes-du-tp">🧩 Étapes du TP</h2>
+<h3 id="🔹-étape-1--préparation-des-machines">🔹 Étape 1 — Préparation des machines</h3>
+<ol>
+<li>Vérifiez que les 3 VMs ont bien un accès réseau entre elles (testez avec <code>ping</code> ou <code>curl</code>).</li>
+<li>Mettez à jour les paquets et installez les utilitaires de base nécessaires.</li>
+<li>Donnez un <strong>nom d’hôte explicite</strong> à chaque machine (<code>vm-prometheus</code>, <code>vm-server1</code>, <code>vm-server2</code>).</li>
+</ol>
+<h3 id="🔹-étape-2--installation-des-composants">🔹 Étape 2 — Installation des composants</h3>
+<h4 id="sur-vm-prometheus-">Sur <code>vm-prometheus</code> :</h4>
+<ul>
+<li><p>Installez et configurez :</p>
+<ul>
+<li>Prometheus</li>
+<li>Grafana</li>
+<li>Alertmanager</li>
+</ul>
+</li>
+<li><p>Assurez-vous que chaque service démarre au boot et écoute sur son port standard.</p>
+</li>
+</ul>
+<h4 id="sur-vm-server1-et-vm-server2-">Sur <code>vm-server1</code> et <code>vm-server2</code> :</h4>
+<ul>
+<li>Installez <strong>Node Exporter</strong></li>
+<li>Assurez-vous qu’il s’exécute comme un service et expose les métriques sur le port 9100.</li>
+</ul>
+<h3 id="🔹-étape-3--configuration-de-prometheus">🔹 Étape 3 — Configuration de Prometheus</h3>
+<ol>
+<li>Configurez Prometheus pour récupérer les métriques depuis <code>vm-server1</code> et <code>vm-server2</code>.</li>
+<li>Associez des <strong>labels clairs</strong> à chaque instance (ex : <code>instance: server1</code>, <code>instance: server2</code>).</li>
+<li>Mettez en place un dossier dédié pour les règles (<code>rules/</code>) et préparez Prometheus à charger vos futures règles d’alerte.</li>
+</ol>
+<h3 id="🔹-étape-4--création-des-règles-dalerte">🔹 Étape 4 — Création des règles d’alerte</h3>
+<p>Vous devez créer deux règles dans un fichier dédié :</p>
+<ul>
+<li><p>Une alerte <strong>pour <code>vm-server1</code></strong> lorsque l’espace disque utilisé dépasse <strong>50%</strong> pendant plus d&#39;une minute.
+Cette alerte devra être <strong>envoyée par mail</strong> à <code>mohamed@utopios.net</code>.</p>
+</li>
+<li><p>Une alerte <strong>pour <code>vm-server2</code></strong> lorsqu&#39;une <strong>charge élevée</strong> est détectée (par exemple : load &gt; 1).
+Cette alerte devra être <strong>envoyée sur un canal Slack</strong> appelé <code>#probleme-server2</code>.</p>
+</li>
+</ul>
+<blockquote>
+<p>Chaque règle devra contenir une <strong>description claire</strong> et un <strong>niveau de sévérité</strong>.</p>
+</blockquote>
+<h3 id="🔹-étape-5--configuration-dalertmanager">🔹 Étape 5 — Configuration d’Alertmanager</h3>
+<ol>
+<li><p>Créez une configuration pour <strong>router les alertes vers différents &quot;receivers&quot;</strong> :</p>
+<ul>
+<li>Un <strong>receiver email</strong> pour les alertes <code>server1</code></li>
+<li>Un <strong>receiver Slack</strong> pour les alertes <code>server2</code></li>
+</ul>
+</li>
+<li><p>Configurez un <strong>routing conditionnel</strong> basé sur les labels d’alerte (par exemple <code>instance</code> ou <code>alert_target</code>).</p>
+</li>
+<li><p>Vérifiez que la configuration est bien prise en compte au redémarrage du service.</p>
+</li>
+</ol>
+<h3 id="🔹-étape-6--configuration-de-grafana">🔹 Étape 6 — Configuration de Grafana</h3>
+<ol>
+<li>Connectez Grafana à Prometheus comme source de données.</li>
+</ol>
+<h4 id="option-2--creation-de-son-dashboard">Option 2 : Creation de son dashboard</h4>
+<ol start="2">
+<li><p>Créez un <strong>dashboard unique</strong> avec les éléments suivants :</p>
+<ul>
+<li>Utilisation disque pour <code>vm-server1</code></li>
+<li>Charge système pour <code>vm-server2</code></li>
+<li>CPU et RAM pour les deux serveurs</li>
+<li>Un panneau qui affiche l’état des alertes actives</li>
+</ul>
+</li>
+<li><p>Organisez votre dashboard de façon claire et exploitable.</p>
+</li>
+</ol>
+<h4 id="option-1--utilisation-dashboard-propoosé-par-grafana">Option 1 : Utilisation Dashboard propoosé par Grafana</h4>
+<p>Le <strong>dashboard</strong> ou les <strong>dashboard</strong> aura, à minima, les éléments suivants :</p>
+<ul>
+<li>Utilisation disque pour <code>vm-server1</code></li>
+<li>Charge système pour <code>vm-server2</code></li>
+<li>CPU et RAM pour les deux serveurs</li>
+<li>Un panneau qui affiche l’état des alertes actives</li>
+</ul>
+<h3 id="🔹-étape-7--vérification-des-alertes-et-simulation">🔹 Étape 7 — Vérification des alertes et simulation</h3>
+<h4 id="pour-vm-server1-">Pour <code>vm-server1</code> :</h4>
+<ul>
+<li>Simulez une consommation importante de disque (sans danger pour le système).</li>
+<li>Vérifiez le déclenchement de l’alerte dans Prometheus et la réception du <strong>mail</strong>.</li>
+</ul>
+<h4 id="pour-vm-server2-">Pour <code>vm-server2</code> :</h4>
+<ul>
+<li>Lancez un processus qui augmente temporairement la charge système (ex: <code>stress</code>).</li>
+<li>Vérifiez la réception d’une <strong>notification Slack</strong>.</li>
+</ul>
+<blockquote>
+<p>Vérifiez aussi que l’information est visible et cohérente sur le dashboard Grafana.</p>
+</blockquote>
+<h3 id="🔹-étape-8--rendu-et-validation">🔹 Étape 8 — Rendu et validation</h3>
+<p>Chaque binôme devra fournir :</p>
+<ol>
+<li><p>Une capture d’écran de Grafana avec les bons panels visibles.</p>
+</li>
+<li><p>Une capture d’écran du mail et de la notification Slack reçus.</p>
+</li>
+<li><p>Une courte note expliquant :</p>
+<ul>
+<li>Les métriques utilisées dans chaque alerte</li>
+<li>Comment la configuration des routes Alertmanager a été pensée</li>
+<li>Ce qui pourrait être amélioré pour une production réelle</li>
+</ul>
+</li>
+</ol>
+
+		</body>

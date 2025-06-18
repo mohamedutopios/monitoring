@@ -1,7 +1,3 @@
-Voici un **guide complet et à jour pour installer Grafana** sur une machine **Ubuntu** (fonctionne aussi sur Debian). On part d’une machine fraîche.
-
----
-
 ## ✅ 1. Mise à jour de la machine
 
 ```bash
@@ -99,10 +95,4 @@ sudo apt update
 sudo apt upgrade grafana
 ```
 
----
 
-Souhaites-tu maintenant :
-
-* Ajouter **Prometheus comme source de données** dans Grafana ?
-* Créer des **dashboards personnalisés** pour CPU, RAM, disque ?
-* Installer Grafana via **Docker** à la place ?

@@ -1,7 +1,3 @@
-Parfait ! Tu veux activer **HTTPS** pour accéder à l’interface de Prometheus. C’est une **excellente pratique** pour sécuriser l’accès (chiffrement, protection contre l’interception, etc.).
-
----
-
 # ✅ Objectif
 
 * Accès à Prometheus via `https://IP_VM:443` (ou un domaine)
@@ -151,9 +147,3 @@ ssl_ciphers HIGH:!aNULL:!MD5;
 ssl_prefer_server_ciphers on;
 ```
 
----
-
-Souhaites-tu que je t’envoie :
-
-* Un script Bash automatique pour faire tout ça ?
-* Ou la même chose pour Grafana en HTTPS ?
